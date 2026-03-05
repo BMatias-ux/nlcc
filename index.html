@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NLCC · Estructura Google Drive</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #141720;
+    --border: #1e2330;
+    --border-hover: #2e3550;
+    --text: #e8eaf0;
+    --muted: #5a6080;
+    --accent: #4f6ef7;
+    --accent-soft: rgba(79,110,247,0.12);
+    --green: #3ecf8e;
+    --green-soft: rgba(62,207,142,0.1);
+    --amber: #f5a623;
+    --amber-soft: rgba(245,166,35,0.1);
+    --pink: #f06292;
+    --pink-soft: rgba(240,98,146,0.1);
+    --teal: #26c6da;
+    --teal-soft: rgba(38,198,218,0.1);
+    --purple: #ab47bc;
+    --purple-soft: rgba(171,71,188,0.1);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    padding: 0 0 60px;
+  }
+
+  header {
+    padding: 40px 48px 32px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-end;
+    gap: 24px;
+    background: linear-gradient(180deg, rgba(79,110,247,0.06) 0%, transparent 100%);
+  }
+
+  .logo-block { display: flex; flex-direction: column; gap: 4px; }
+
+  .logo {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: var(--accent);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .logo::before {
+    content: '';
+    width: 20px; height: 2px;
+    background: var(--accent);
+    display: inline-block;
+  }
+
+  h1 {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+
+  h1 span { color: var(--accent); }
+
+  .subtitle {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    margin-left: auto;
+    text-align: right;
+    line-height: 1.8;
+  }
+
+  .subtitle strong {
+    color: var(--green);
+    font-weight: 400;
+  }
+
+  .legend {
+    display: flex;
+    gap: 20px;
+    padding: 16px 48px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .legend-dot {
+    width: 8px; height: 8px;
+    border-radius: 2px;
+  }
+
+  .main {
+    padding: 32px 48px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 16px;
+  }
+
+  .root-folder {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .root-folder:hover {
+    border-color: var(--border-hover);
+  }
+
+  .root-header {
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    user-select: none;
+    border-bottom: 1px solid transparent;
+    transition: background 0.15s;
+  }
+
+  .root-header:hover {
+    background: rgba(255,255,255,0.02);
+  }
+
+  .root-header.open {
+    border-bottom-color: var(--border);
+  }
+
+  .folder-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px;
+    flex-shrink: 0;
+  }
+
+  .folder-title {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .folder-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+
+  .folder-desc {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  .toggle-btn {
+    width: 20px; height: 20px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+
+  .toggle-btn:hover {
+    border-color: var(--border-hover);
+    color: var(--text);
+  }
+
+  .tree-body {
+    padding: 12px 16px 16px;
+    display: none;
+  }
+
+  .tree-body.open {
+    display: block;
+  }
+
+  .tree-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    position: relative;
+  }
+
+  .tree-line {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 20px;
+    flex-shrink: 0;
+    padding-top: 11px;
+  }
+
+  .tree-line::before {
+    content: '';
+    width: 1px;
+    height: 100%;
+    background: var(--border);
+    position: absolute;
+    left: 9px;
+    top: 0;
+    bottom: 0;
+  }
+
+  .tree-item:last-child .tree-line::before {
+    height: 11px;
+  }
+
+  .tree-connector {
+    width: 16px; height: 1px;
+    background: var(--border);
+    flex-shrink: 0;
+    margin-top: 11px;
+    margin-left: -1px;
+  }
+
+  .sub-folder {
+    flex: 1;
+    margin-bottom: 4px;
+  }
+
+  .sub-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+
+  .sub-header:hover {
+    background: rgba(255,255,255,0.03);
+  }
+
+  .sub-icon {
+    font-size: 14px;
+    width: 22px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .sub-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #c8cbdb;
+    flex: 1;
+  }
+
+  .sub-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-weight: 400;
+  }
+
+  .sub-toggle {
+    font-size: 10px;
+    color: var(--muted);
+    width: 16px;
+    text-align: center;
+  }
+
+  .sub-children {
+    padding-left: 30px;
+    display: none;
+  }
+
+  .sub-children.open {
+    display: block;
+  }
+
+  .leaf {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 10px 4px 0;
+  }
+
+  .leaf-dot {
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--border-hover);
+    flex-shrink: 0;
+    margin-left: 6px;
+  }
+
+  .leaf-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  .leaf-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    margin-left: auto;
+  }
+
+  /* Color themes */
+  .c-blue  { --col: var(--accent);  --col-soft: var(--accent-soft); }
+  .c-green { --col: var(--green);   --col-soft: var(--green-soft); }
+  .c-amber { --col: var(--amber);   --col-soft: var(--amber-soft); }
+  .c-pink  { --col: var(--pink);    --col-soft: var(--pink-soft); }
+  .c-teal  { --col: var(--teal);    --col-soft: var(--teal-soft); }
+  .c-purple{ --col: var(--purple);  --col-soft: var(--purple-soft); }
+
+  .folder-icon { background: var(--col-soft); }
+  .sub-badge { background: var(--col-soft); color: var(--col); }
+  .leaf-tag { background: var(--col-soft); color: var(--col); }
+
+  .full-width {
+    grid-column: 1 / -1;
+  }
+
+  .info-bar {
+    margin: 0 48px 0;
+    padding: 12px 20px;
+    background: var(--accent-soft);
+    border: 1px solid rgba(79,110,247,0.2);
+    border-radius: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 24px;
+    margin-top: 24px;
+  }
+
+  .info-bar::before { content: 'ℹ'; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-block">
+    <div class="logo">Google Drive · Arquitectura de carpetas</div>
+    <h1>NLCC <span>Drive</span></h1>
+  </div>
+  <div class="subtitle">
+    Dominios registrados: <strong>hello-kbeauty.com</strong> · <strong>klcc.com.ar</strong><br>
+    Hosting: <strong>Hostinger</strong> · Activación: <strong>05/03/2026</strong><br>
+    Rubro: <strong>Importación &amp; Exportación</strong>
+  </div>
+</header>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#4f6ef7"></div> Organización / Admin</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#3ecf8e"></div> Operaciones / Logística</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#f5a623"></div> Digital / Web</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#f06292"></div> Marketing / Marca</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#26c6da"></div> Bases de Datos</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#ab47bc"></div> Legal / Contratos</div>
+</div>
+
+<div class="info-bar">
+  Hacé clic en cada carpeta para expandir su contenido. Esta estructura está diseñada para escalar con la empresa.
+</div>
+
+<div class="main" id="tree"></div>
+
+<script>
+const data = [
+  {
+    id: "01",
+    name: "01 · ADMINISTRACIÓN",
+    desc: "Gestión interna, finanzas y RRHH",
+    icon: "🏢",
+    color: "c-blue",
+    children: [
+      {
+        name: "01.1 Finanzas",
+        icon: "💰",
+        badge: "admin",
+        subs: ["Facturación y pagos", "Presupuestos anuales", "Cuentas bancarias", "Gastos operativos", "Declaraciones impositivas"]
+      },
+      {
+        name: "01.2 Recursos Humanos",
+        icon: "👥",
+        badge: "admin",
+        subs: ["Legajos del personal", "Contratos laborales", "Liquidación de sueldos"]
+      },
+      {
+        name: "01.3 Documentación societaria",
+        icon: "📋",
+        badge: "admin",
+        subs: ["Acta constitutiva", "Estatutos", "Poderes notariales", "AFIP / ARCA"]
+      },
+      {
+        name: "01.4 Reuniones y actas",
+        icon: "📝",
+        badge: "admin",
+        subs: ["Actas de reuniones", "Minutas ejecutivas", "Decisiones clave"]
+      }
+    ]
+  },
+  {
+    id: "02",
+    name: "02 · LOGÍSTICA & OPERACIONES",
+    desc: "Importación, exportación y cadena de suministro",
+    icon: "🚢",
+    color: "c-green",
+    children: [
+      {
+        name: "02.1 Importaciones",
+        icon: "📦",
+        badge: "operaciones",
+        subs: ["Órdenes de compra", "Bill of Lading / Airway Bill", "Despacho aduanero", "Certificados de origen", "Facturas comerciales"]
+      },
+      {
+        name: "02.2 Exportaciones",
+        icon: "✈️",
+        badge: "operaciones",
+        subs: ["Solicitudes de exportación", "Permisos y habilitaciones", "Seguimiento de envíos"]
+      },
+      {
+        name: "02.3 Proveedores",
+        icon: "🤝",
+        badge: "operaciones",
+        subs: ["Ficha de proveedores", "Contratos y acuerdos", "Evaluación de proveedores"]
+      },
+      {
+        name: "02.4 Almacén & Stock",
+        icon: "🏭",
+        badge: "operaciones",
+        subs: ["Inventario general", "Entradas y salidas", "Control de calidad"]
+      },
+      {
+        name: "02.5 Aranceles y normativa",
+        icon: "📜",
+        badge: "operaciones",
+        subs: ["NCM / Clasificación arancelaria", "Normativa SENASA / INAL", "Regulaciones de destino"]
+      }
+    ]
+  },
+  {
+    id: "03",
+    name: "03 · CLIENTES & COMERCIAL",
+    desc: "Cartera de clientes, ventas y CRM",
+    icon: "🤝",
+    color: "c-teal",
+    children: [
+      {
+        name: "03.1 Cartera de clientes",
+        icon: "👤",
+        badge: "comercial",
+        subs: ["Fichas de clientes", "Historial de pedidos", "Condiciones comerciales"]
+      },
+      {
+        name: "03.2 Propuestas y cotizaciones",
+        icon: "📊",
+        badge: "comercial",
+        subs: ["Plantillas de cotización", "Propuestas enviadas", "Propuestas aprobadas"]
+      },
+      {
+        name: "03.3 Posventa",
+        icon: "🔄",
+        badge: "comercial",
+        subs: ["Reclamos y devoluciones", "Seguimiento de satisfacción"]
+      }
+    ]
+  },
+  {
+    id: "04",
+    name: "04 · BASES DE DATOS",
+    desc: "Registros estructurados y archivos de datos",
+    icon: "🗄️",
+    color: "c-teal",
+    wide: false,
+    children: [
+      {
+        name: "04.1 Productos",
+        icon: "📂",
+        badge: "datos",
+        subs: ["Catálogo general", "Fichas técnicas", "Listas de precios", "Imágenes de productos"]
+      },
+      {
+        name: "04.2 Contactos",
+        icon: "📇",
+        badge: "datos",
+        subs: ["Directorio de proveedores", "Directorio de clientes", "Contactos institucionales"]
+      },
+      {
+        name: "04.3 Precios y tarifas",
+        icon: "💲",
+        badge: "datos",
+        subs: ["Listas de precios por mercado", "Histórico de precios", "Tipo de cambio referencial"]
+      }
+    ]
+  },
+  {
+    id: "05",
+    name: "05 · LEGAL & CONTRATOS",
+    desc: "Documentación legal, acuerdos y compliance",
+    icon: "⚖️",
+    color: "c-purple",
+    children: [
+      {
+        name: "05.1 Contratos comerciales",
+        icon: "📄",
+        badge: "legal",
+        subs: ["Contratos con proveedores", "Contratos con clientes", "Contratos de distribución"]
+      },
+      {
+        name: "05.2 Propiedad intelectual",
+        icon: "™️",
+        badge: "legal",
+        subs: ["Registro de marcas", "Licencias de uso", "Dominios web"]
+      },
+      {
+        name: "05.3 Compliance & Normativa",
+        icon: "✅",
+        badge: "legal",
+        subs: ["GDPR / Privacidad", "Normativa de comercio exterior", "Habilitaciones"]
+      }
+    ]
+  },
+  {
+    id: "06",
+    name: "06 · DIGITAL · hello-kbeauty.com",
+    desc: "Sitio de K-Beauty · Contenidos y desarrollo web",
+    icon: "🌸",
+    color: "c-pink",
+    wide: true,
+    children: [
+      {
+        name: "06.1 Desarrollo & Hosting",
+        icon: "⚙️",
+        badge: "web",
+        subs: ["Credenciales Hostinger (doc protegido)", "Acceso cPanel / FTP", "Backups del sitio", "SSL y configuraciones", "DNS Records"]
+      },
+      {
+        name: "06.2 Diseño UX/UI",
+        icon: "🎨",
+        badge: "web",
+        subs: ["Wireframes", "Mockups y prototipos", "Design system / componentes", "Paleta de colores y tipografías"]
+      },
+      {
+        name: "06.3 Contenido & Copywriting",
+        icon: "✍️",
+        badge: "web",
+        subs: ["Textos del sitio (home, about, etc.)", "Descripciones de productos", "Blogposts / Artículos", "Traducciones"]
+      },
+      {
+        name: "06.4 Assets gráficos",
+        icon: "🖼️",
+        badge: "web",
+        subs: ["Banners y slides", "Imágenes de productos (web)", "Íconos y elementos UI", "Fotos editadas"]
+      },
+      {
+        name: "06.5 SEO & Analytics",
+        icon: "📈",
+        badge: "web",
+        subs: ["Keywords research", "Meta tags y schema", "Reportes Google Analytics", "Search Console"]
+      },
+      {
+        name: "06.6 Email Marketing",
+        icon: "📧",
+        badge: "web",
+        subs: ["Templates de newsletters", "Campañas enviadas", "Listas de suscriptores"]
+      }
+    ]
+  },
+  {
+    id: "07",
+    name: "07 · DIGITAL · klcc.com.ar",
+    desc: "Sitio corporativo NLCC · Gestión institucional",
+    icon: "🏷️",
+    color: "c-amber",
+    wide: true,
+    children: [
+      {
+        name: "07.1 Desarrollo & Hosting",
+        icon: "⚙️",
+        badge: "web",
+        subs: ["Credenciales dominio .com.ar (doc protegido)", "Configuración WordPress / CMS", "Backups", "DNS y correos corporativos"]
+      },
+      {
+        name: "07.2 Diseño UX/UI",
+        icon: "🎨",
+        badge: "web",
+        subs: ["Wireframes corporativos", "Mockups", "Plantillas Elementor / bloques"]
+      },
+      {
+        name: "07.3 Contenido institucional",
+        icon: "✍️",
+        badge: "web",
+        subs: ["Texto sobre NLCC", "Servicios / Catálogos", "Noticias y actualizaciones", "Documentos descargables"]
+      },
+      {
+        name: "07.4 Assets gráficos",
+        icon: "🖼️",
+        badge: "web",
+        subs: ["Banners institucionales", "Galería de productos", "Documentos PDF corporativos"]
+      }
+    ]
+  },
+  {
+    id: "08",
+    name: "08 · MARCA & BRANDING",
+    desc: "Identidad visual, activos de marca y redes sociales",
+    icon: "✨",
+    color: "c-pink",
+    wide: true,
+    children: [
+      {
+        name: "08.1 Identidad visual NLCC",
+        icon: "🔷",
+        badge: "marca",
+        subs: ["Logo (formatos AI, SVG, PNG, PDF)", "Manual de marca / brandbook", "Paleta de colores oficial", "Tipografías corporativas", "Firma de email"]
+      },
+      {
+        name: "08.2 Identidad visual K-Beauty",
+        icon: "🌸",
+        badge: "marca",
+        subs: ["Logo hello-kbeauty.com", "Guía de estilo K-Beauty", "Templates para RRSS", "Recursos gráficos por temporada"]
+      },
+      {
+        name: "08.3 Redes sociales",
+        icon: "📱",
+        badge: "marca",
+        subs: ["Calendario de contenido", "Posts publicados (por mes)", "Reels y videos", "Stories templates"]
+      },
+      {
+        name: "08.4 Fotografía y multimedia",
+        icon: "📷",
+        badge: "marca",
+        subs: ["Fotos de productos originales (alta res)", "Fotos editadas y recortadas", "Videos de producto", "Material de prensa"]
+      },
+      {
+        name: "08.5 Material de ventas",
+        icon: "📰",
+        badge: "marca",
+        subs: ["Presentaciones corporativas", "Catálogos PDF", "Tarjetas de presentación", "Flyers y folletería"]
+      }
+    ]
+  }
+];
+
+const tree = document.getElementById('tree');
+
+data.forEach(root => {
+  const card = document.createElement('div');
+  card.className = `root-folder ${root.color}${root.wide ? ' full-width' : ''}`;
+
+  const header = document.createElement('div');
+  header.className = 'root-header';
+  header.innerHTML = `
+    <div class="folder-icon">${root.icon}</div>
+    <div class="folder-title">
+      <div class="folder-name">${root.name}</div>
+      <div class="folder-desc">${root.desc}</div>
+    </div>
+    <button class="toggle-btn">+</button>
+  `;
+
+  const body = document.createElement('div');
+  body.className = 'tree-body';
+
+  const wrap = document.createElement('div');
+  wrap.style.display = 'flex';
+  wrap.style.flexDirection = 'column';
+  wrap.style.gap = '2px';
+
+  root.children.forEach(child => {
+    const item = document.createElement('div');
+    item.className = 'sub-folder';
+
+    const sh = document.createElement('div');
+    sh.className = 'sub-header';
+    sh.innerHTML = `
+      <span class="sub-icon">${child.icon}</span>
+      <span class="sub-name">${child.name}</span>
+      <span class="sub-badge">${child.badge}</span>
+      <span class="sub-toggle">▸</span>
+    `;
+
+    const sc = document.createElement('div');
+    sc.className = 'sub-children';
+
+    child.subs.forEach(leaf => {
+      const l = document.createElement('div');
+      l.className = 'leaf';
+      l.innerHTML = `<div class="leaf-dot"></div><span class="leaf-name">${leaf}</span>`;
+      sc.appendChild(l);
+    });
+
+    sh.addEventListener('click', () => {
+      sc.classList.toggle('open');
+      sh.querySelector('.sub-toggle').textContent = sc.classList.contains('open') ? '▾' : '▸';
+    });
+
+    item.appendChild(sh);
+    item.appendChild(sc);
+    wrap.appendChild(item);
+  });
+
+  body.appendChild(wrap);
+
+  const btn = header.querySelector('.toggle-btn');
+  header.addEventListener('click', () => {
+    body.classList.toggle('open');
+    header.classList.toggle('open');
+    btn.textContent = body.classList.contains('open') ? '−' : '+';
+  });
+
+  card.appendChild(header);
+  card.appendChild(body);
+  tree.appendChild(card);
+});
+</script>
+</body>
+</html>
